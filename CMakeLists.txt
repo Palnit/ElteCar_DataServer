@@ -1,0 +1,32 @@
+cmake_minimum_required(VERSION 3.22)
+
+project(DataServer VERSION 0.1 LANGUAGES CXX)
+
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+
+set(PROJECT_SOURCES
+   src/main.cpp
+)
+
+set(HEADER_FILES
+
+)
+
+
+add_executable(${CMAKE_PROJECT_NAME}
+    ${PROJECT_SOURCES}
+    ${HEADER_FILES}
+)
+
+target_include_directories(${CMAKE_PROJECT_NAME}
+    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+
+install(TARGETS ${CMAKE_PROJECT_NAME}
+    BUNDLE DESTINATION .
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(DataServer VERSION 0.1 LANGUAGES CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -9,14 +10,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(PROJECT_SOURCES
    src/main.cpp
+   src/argument_parser.cpp
 )
 
 set(HEADER_FILES
+    include/argument_parser.h
 
 )
 
 
-add_executable(${CMAKE_PROJECT_NAME}
+add_executable(DataServer
     ${PROJECT_SOURCES}
     ${HEADER_FILES}
 )

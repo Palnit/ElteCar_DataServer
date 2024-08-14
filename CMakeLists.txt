@@ -2,20 +2,23 @@ cmake_minimum_required(VERSION 3.22)
 
 project(DataServer VERSION 0.1 LANGUAGES CXX)
 
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 
 set(PROJECT_SOURCES
    src/main.cpp
-   src/argument_parser.cpp
+   src/general/ArgumentParser/argument_parser.cpp
+   src/general/ArgumentParser/base_runner.cpp
 )
 
 set(HEADER_FILES
-    include/argument_parser.h
-
+    include/general/ArgumentParser/argument_parser.h
+    include/general/ArgumentParser/argument_runner.h
+    include/general/ArgumentParser/base_runner.h
+    include/general/SharedMemory/memory_info.h
 )
 
 

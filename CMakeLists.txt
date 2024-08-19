@@ -12,13 +12,15 @@ set(PROJECT_SOURCES
    src/main.cpp
    src/general/ArgumentParser/argument_parser.cpp
    src/general/ArgumentParser/base_runner.cpp
+   src/general/SharedMemory/bufferd_writer.cpp
 )
 
 set(HEADER_FILES
     include/general/ArgumentParser/argument_parser.h
     include/general/ArgumentParser/argument_runner.h
     include/general/ArgumentParser/base_runner.h
-    include/general/SharedMemory/memory_info.h
+    include/general/SharedMemory/info.h
+    include/general/SharedMemory/bufferd_writer.h
 )
 
 

@@ -21,7 +21,7 @@ public:
 
     ~BufferedWriter();
 
-    void* getMemoryPointer();
+    bool writeMemory(const void* memory, std::size_t size);
 
     bool initalize();
 

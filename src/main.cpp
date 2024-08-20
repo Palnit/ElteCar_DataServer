@@ -1,14 +1,19 @@
 #include <semaphore.h>
+#include <chrono>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <ios>
 #include <iostream>
-#include <iterator>
-#include <limits>
 #include <ostream>
+#include <regex>
 #include <string>
+#include <thread>
 #include <vector>
-#include "general/ArgumentParser/argument_parser.h"
+#include "argument_handler.h"
+#include "cpp_file_handling.h"
+#include "general/ArgumentParser/parser.h"
+#include "general/ArgumentParser/runner.h"
 #include "general/SharedMemory/bufferd_writer.h"
 
 #include <fcntl.h>
@@ -16,45 +21,57 @@
 #include <unistd.h>
 
 int main(int argc, char** argv) {
-    ArgumentParser parser(argc, argv);
-    parser.addRunner(new ArgumentRunner<std::vector<std::string>,
-                                        ArgumentRunnerType::ARRAY_ARGUMENTS>(
-        "-p", "--pictures", [](std::vector<std::string> data) {
-            for (std::string arg : data) {}
-        }));
+    Arg::Parser parser(argc, argv);
     parser.addRunner(
-        new ArgumentRunner<std::string, ArgumentRunnerType::NORMAL_ARGUMENT>(
-            "-s", "--sictures", [](std::string data) {}));
+        new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
+            "-d", "--delay", &ArgumentHandler::DelayHandler));
+    parser.addRunner(
+        new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
+            "-m", "--max", &ArgumentHandler::DataPointHandler));
+
+    parser.addRunner(new Arg::Runner<std::vector<std::string>,
+                                     Arg::RunnerType::ARRAY_ARGUMENTS>(
+        "-i", "--images", &ArgumentHandler::BaseImageHandler));
     parser.parse();
 
-    SharedMemory::BufferedWriter writer("Shm", "Shm_", 2);
-    writer.initalize();
-    std::cout << "worked" << std::endl;
-    return 0;
+    SharedMemory::BufferedWriter writer("Asd", "Asd_", 2);
+    SharedMemory::BufferedWriter writer2("Asd2", "Asd2_", 2);
+    SharedMemory::BufferedWriter writer3("Asd3", "Asd3_", 2);
+    SharedMemory::BufferedWriter writer4("Asd4", "Asd4_", 2);
 
-    const int size = 2000000;
-    uint shmFileDescriptor = shm_open("Test", O_CREAT | O_RDWR, 0666);
-    ftruncate(shmFileDescriptor, size);
-    std::ifstream ifs;
-    char* message;
-    std::streamsize sizeoffile;
+    for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
+        std::chrono::milliseconds dura(ArgumentHandler::m_delay);
+        std::this_thread::sleep_for(dura);
+        std::regex regex("\\{.*?\\}");
+        std::string name = std::regex_replace(ArgumentHandler::m_imageNames[0],
+                                              regex, std::to_string(i));
+        std::string name2 = std::regex_replace(ArgumentHandler::m_imageNames[1],
+                                               regex, std::to_string(i));
+        std::string name3 = std::regex_replace(ArgumentHandler::m_imageNames[2],
+                                               regex, std::to_string(i));
+        std::string name4 = std::regex_replace(ArgumentHandler::m_imageNames[3],
+                                               regex, std::to_string(i));
+        std::cout << "reading " << name << std::endl;
+        std::cout << name2 << std::endl;
+        std::cout << name3 << std::endl;
+        std::cout << name4 << std::endl;
 
-    ifs.exceptions(std::ifstream::failbit | std::ifstream::badbit);
-    try {
-        ifs.open(
-            "/home/palnit/Desktop/ElteCarData/parkolo_pictures/"
-            "Dev0_Image_w1920_h1200_fn1.jpg",
-            std::ios::binary | std::ios::in);
-        ifs.ignore(std::numeric_limits<std::streamsize>::max());
-        sizeoffile = ifs.gcount();
-        ifs.clear();//  Since ignore will have set eof.
-        ifs.seekg(0, std::ios_base::beg);
-        message = new char[sizeoffile];
-        ifs.read(message, sizeoffile - 1);
-        ifs.close();
-    } catch (std::ifstream::failure e) { std::cout << "Error" << std::endl; }
-    std::cout << sizeoffile;
-
-    void* ptr = mmap(NULL, size, PROT_WRITE, MAP_SHARED, shmFileDescriptor, 0);
-    std::memcpy(ptr, message, sizeoffile);
+        try {
+            auto [message, sizeoffile] = FileHandling::BinaryReader(name);
+            auto [message2, sizeoffile2] = FileHandling::BinaryReader(name2);
+            auto [message3, sizeoffile3] = FileHandling::BinaryReader(name3);
+            auto [message4, sizeoffile4] = FileHandling::BinaryReader(name4);
+            writer.writeMemory(message, sizeoffile);
+            writer2.writeMemory(message2, sizeoffile2);
+            writer3.writeMemory(message3, sizeoffile3);
+            writer4.writeMemory(message4, sizeoffile4);
+            delete message;
+            delete message2;
+            delete message3;
+            delete message4;
+        } catch (std::ifstream::failure e) {
+            std::cout << "Error" << std::endl;
+            continue;
+        }
+    }
 }

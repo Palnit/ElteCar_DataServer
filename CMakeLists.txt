@@ -10,17 +10,20 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(PROJECT_SOURCES
    src/main.cpp
-   src/general/ArgumentParser/argument_parser.cpp
-   src/general/ArgumentParser/base_runner.cpp
+   src/general/ArgumentParser/parser.cpp
    src/general/SharedMemory/bufferd_writer.cpp
+   src/argument_handler.cpp
+   src/cpp_file_handling.cpp
 )
 
 set(HEADER_FILES
-    include/general/ArgumentParser/argument_parser.h
-    include/general/ArgumentParser/argument_runner.h
+    include/general/ArgumentParser/parser.h
+    include/general/ArgumentParser/runner.h
     include/general/ArgumentParser/base_runner.h
     include/general/SharedMemory/info.h
     include/general/SharedMemory/bufferd_writer.h
+    include/argument_handler.h
+    include/cpp_file_handling.h
 )
 
 

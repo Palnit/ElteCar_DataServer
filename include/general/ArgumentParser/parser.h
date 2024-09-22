@@ -23,7 +23,7 @@ public:
 
     template<class T, Arg::RunnerType type>
     void addDefaultRunner(Arg::Runner<T, type>* runner) {
-        if (!m_defaultRunner) { delete m_defaultRunner; }
+        if (m_defaultRunner) { delete m_defaultRunner; }
         m_defaultRunner = runner;
     };
 

@@ -5,12 +5,14 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <nlohmann/json.hpp>
 #include <ostream>
 #include <regex>
 #include <string>
 #include <thread>
 #include <vector>
 #include "argument_handler.h"
+#include "cartesians.h"
 #include "cpp_file_handling.h"
 #include "csv_reader.h"
 #include "general/ArgumentParser/base_runner.h"
@@ -39,22 +41,20 @@ int main(int argc, char** argv) {
             "-c", "-csvpath", &ArgumentHandler::CsvHandler));
     parser.parse();
 
-    int ID;
-    float Lat;
-    float Lon;
-    float alt;
-    float vel;
-    float Ax, Ay, Az;
-    float Mx, My, Mz;
+    CSVReader csvData(ArgumentHandler::m_csvPath, true);
+    std::vector<cartesians> csvCartesians;
+    cartesians line;
+    while (csvData.ReadLine(line.ID, line.Lat, line.Lon, line.Alt, line.Vel,
+                            line.Ax, line.Ay, line.Az, line.Mx, line.My,
+                            line.Mz)) {
+        csvCartesians.push_back(line);
+    }
 
-    CSVReader asd(ArgumentHandler::m_csvPath, true);
-    asd.ReadLine({"ID", "Lat", "Lon"}, ID, Lat, Lon);
-    std::cout << ID << Lat << Lon;
-    /*
     SharedMemory::BufferedWriter writer("Asd", "Asd_", 2);
     SharedMemory::BufferedWriter writer2("Asd2", "Asd2_", 2);
     SharedMemory::BufferedWriter writer3("Asd3", "Asd3_", 2);
     SharedMemory::BufferedWriter writer4("Asd4", "Asd4_", 2);
+    SharedMemory::BufferedWriter csvWriter("Csv", "Csv_", 3);
 
     for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
         std::chrono::milliseconds dura(ArgumentHandler::m_delay);
@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
             std::cout << "Error" << std::endl;
             continue;
         }
+        csvWriter.writeMemory(&csvCartesians[i], sizeof(cartesians));
     }
-    */
     return 0;
 }

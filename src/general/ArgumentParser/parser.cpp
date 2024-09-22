@@ -3,6 +3,7 @@
 namespace Arg {
 
 void Parser::parse() {
+    if (m_arguments.size() < 2) { m_defaultRunner->run(); }
     std::vector<std::string>::iterator tmpBegin;
     BaseRunner* arrayRunner = nullptr;
     for (std::vector<std::string>::iterator it = m_arguments.begin();
@@ -42,6 +43,7 @@ Parser::Parser(int argc, char** argv, std::string description)
 
 Parser::~Parser() {
     for (BaseRunner* runner : m_runners) { delete runner; }
+    if (!m_defaultRunner) { delete m_defaultRunner; }
 }
 
 Parser::Parser(std::vector<std::string>::iterator begin,

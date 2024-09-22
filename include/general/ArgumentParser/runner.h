@@ -29,7 +29,9 @@ public:
              std::vector<std::string>::iterator end) override {
         m_data.insert(m_data.end(), begin, end);
     }
-    void run() override { m_callback(m_data); }
+    void run() override {
+        if (!m_data.empty()) { m_callback(m_data); }
+    }
     bool testArgument(std::vector<std::string>::iterator it) override {
         if (*it == m_shortName) { return true; }
         if (*it == m_longName) { return true; }
@@ -59,7 +61,9 @@ public:
           m_longName(longName),
           m_callback(callback) {}
     void add(std::vector<std::string>::iterator it) override { m_data = *it; }
-    void run() override { m_callback(m_data); }
+    void run() override {
+        if (!m_data.empty()) { m_callback(m_data); }
+    }
     bool testArgument(std::vector<std::string>::iterator it) override {
         if (*it == m_shortName) { return true; }
         if (*it == m_longName) { return true; }

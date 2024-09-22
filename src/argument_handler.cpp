@@ -22,3 +22,9 @@ void ArgumentHandler::DataPointHandler(std::string input) {
         << "Got parameter -m/--max setting maximum number of data points to "
         << m_numberOfDataPoints << std::endl;
 }
+
+void ArgumentHandler::CsvHandler(std::string input) {
+    ArgumentHandler::m_csvPath = input;
+    std::cout << "Got parameter -c/--csvpath setting path of csv file to "
+              << ArgumentHandler::m_csvPath << std::endl;
+}

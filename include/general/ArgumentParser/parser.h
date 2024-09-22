@@ -21,10 +21,17 @@ public:
         m_runners.push_back(runner);
     };
 
+    template<class T, Arg::RunnerType type>
+    void addDefaultRunner(Arg::Runner<T, type>* runner) {
+        if (!m_defaultRunner) { delete m_defaultRunner; }
+        m_defaultRunner = runner;
+    };
+
     void parse();
 
 private:
     std::vector<BaseRunner*> m_runners;
+    BaseRunner* m_defaultRunner = nullptr;
     std::vector<std::string> m_arguments;
     std::string m_description;
 };

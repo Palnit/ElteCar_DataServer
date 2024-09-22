@@ -12,6 +12,8 @@
 #include <vector>
 #include "argument_handler.h"
 #include "cpp_file_handling.h"
+#include "csv_reader.h"
+#include "general/ArgumentParser/base_runner.h"
 #include "general/ArgumentParser/parser.h"
 #include "general/ArgumentParser/runner.h"
 #include "general/SharedMemory/bufferd_writer.h"
@@ -32,8 +34,23 @@ int main(int argc, char** argv) {
     parser.addRunner(new Arg::Runner<std::vector<std::string>,
                                      Arg::RunnerType::ARRAY_ARGUMENTS>(
         "-i", "--images", &ArgumentHandler::BaseImageHandler));
+    parser.addRunner(
+        new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
+            "-c", "-csvpath", &ArgumentHandler::CsvHandler));
     parser.parse();
 
+    int ID;
+    float Lat;
+    float Lon;
+    float alt;
+    float vel;
+    float Ax, Ay, Az;
+    float Mx, My, Mz;
+
+    CSVReader asd(ArgumentHandler::m_csvPath, true);
+    asd.ReadLine({"ID", "Lat", "Lon"}, ID, Lat, Lon);
+    std::cout << ID << Lat << Lon;
+    /*
     SharedMemory::BufferedWriter writer("Asd", "Asd_", 2);
     SharedMemory::BufferedWriter writer2("Asd2", "Asd2_", 2);
     SharedMemory::BufferedWriter writer3("Asd3", "Asd3_", 2);
@@ -74,4 +91,6 @@ int main(int argc, char** argv) {
             continue;
         }
     }
+    */
+    return 0;
 }

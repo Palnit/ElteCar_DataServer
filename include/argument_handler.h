@@ -13,7 +13,7 @@ public:
     static inline std::vector<std::string> m_imageNames;
     static inline std::string m_csvPath;
     static inline int m_delay;
-    static inline uint m_numberOfDataPoints;
+    static inline unsigned int m_numberOfDataPoints;
 };
 
 #endif// ELTECAR_DATASERVER_INCLUDE_ARGUMENT_HANDLER_H

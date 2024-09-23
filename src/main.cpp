@@ -1,4 +1,3 @@
-#include <semaphore.h>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -19,10 +18,6 @@
 #include "general/ArgumentParser/parser.h"
 #include "general/ArgumentParser/runner.h"
 #include "general/SharedMemory/bufferd_writer.h"
-
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <unistd.h>
 
 int main(int argc, char** argv) {
     Arg::Parser parser(argc, argv);
@@ -54,7 +49,6 @@ int main(int argc, char** argv) {
     SharedMemory::BufferedWriter writer2("Asd2", "Asd2_", 2);
     SharedMemory::BufferedWriter writer3("Asd3", "Asd3_", 2);
     SharedMemory::BufferedWriter writer4("Asd4", "Asd4_", 2);
-    SharedMemory::BufferedWriter csvWriter("Csv", "Csv_", 3);
 
     for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
         std::chrono::milliseconds dura(ArgumentHandler::m_delay);
@@ -90,7 +84,6 @@ int main(int argc, char** argv) {
             std::cout << "Error" << std::endl;
             continue;
         }
-        csvWriter.writeMemory(&csvCartesians[i], sizeof(cartesians));
     }
     return 0;
 }

@@ -14,7 +14,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 #endif
-
 namespace SharedMemory {
 
 #if defined(WIN32) || defined(_WIN32) \

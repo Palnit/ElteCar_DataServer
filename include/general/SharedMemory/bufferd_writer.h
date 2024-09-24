@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 #include "general/SharedMemory/info.h"
-
 #if defined(WIN32) || defined(_WIN32) \
     || defined(__WIN32) && !defined(__CYGWIN__)
 #include <windows.h>
@@ -65,6 +64,8 @@ public:
     bool writeMemory(const void* memory, std::size_t size);
 
     bool initalize();
+
+    std::string InfoBufferName() { return m_infoBufferName; }
 
 private:
     // vector containing name of the buffer, descriptor and the pointer to memory

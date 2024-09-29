@@ -3,6 +3,8 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstring>
+#include <iostream>
 #include <thread>
 #include <vector>
 #include "general/SharedMemory/bufferd_writer.h"
@@ -26,6 +28,11 @@ public:
             if ((m_initalized = initalize()) == false) { return false; }
         }
 
+        if (sem_wait(&m_memoryInfo->semaphore) == -1) {
+            std::cout << "Semaphore wait error: " << strerror(errno);
+            return false;
+        }
+
         std::vector<std::thread> threads;
 
         for (int i = 0; i < N; i++) {
@@ -37,6 +44,45 @@ public:
             threads.push_back(std::move(thread));
         }
         for (auto& thread : threads) { thread.join(); }
+
+        if (sem_post(&m_memoryInfo->semaphore) == -1) {
+            std::cout << "Semaphore post error: " << strerror(errno);
+            return false;
+        }
+
+        return true;
+    }
+
+    bool writeMultiMemory(std::vector<void*> data, std::vector<long> size) {
+        assert(data.size() == m_writers.size());
+        assert(size.size() == m_writers.size());
+
+        if (!m_initalized) {
+            if ((m_initalized = initalize()) == false) { return false; }
+        }
+
+        if (sem_wait(&m_memoryInfo->semaphore) == -1) {
+            std::cout << "Semaphore wait error: " << strerror(errno);
+            return false;
+        }
+
+        std::vector<std::thread> threads;
+
+        for (int i = 0; i < data.size(); i++) {
+            std::thread thread(
+                [](SharedMemory::BufferedWriter& writer, void* data,
+                   std::size_t size) { writer.writeMemory(data, size); },
+                std::ref(m_writers[i]), data[i], size[i]);
+
+            threads.push_back(std::move(thread));
+        }
+        for (auto& thread : threads) { thread.join(); }
+
+        if (sem_post(&m_memoryInfo->semaphore) == -1) {
+            std::cout << "Semaphore post error: " << strerror(errno);
+            return false;
+        }
+
         return true;
     }
 

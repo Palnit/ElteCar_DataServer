@@ -3,6 +3,7 @@
 
 #include <functional>
 #include "general/ArgumentParser/base_runner.h"
+#include "nlohmann/json_fwd.hpp"
 
 namespace Arg {
 
@@ -37,6 +38,12 @@ public:
         if (*it == m_longName) { return true; }
         return false;
     }
+    nlohmann::json::iterator testJsonArgument(nlohmann::json& data) override {
+        nlohmann::json::iterator it;
+        if ((it = data.find(m_shortName)) != data.end()) { return it; }
+        if ((it = data.find(m_longName)) != data.end()) { return it; }
+        return data.end();
+    }
 
 private:
     std::function<void(std::vector<std::string>)> m_callback;
@@ -68,6 +75,12 @@ public:
         if (*it == m_shortName) { return true; }
         if (*it == m_longName) { return true; }
         return false;
+    }
+    nlohmann::json::iterator testJsonArgument(nlohmann::json& data) override {
+        nlohmann::json::iterator it;
+        if ((it = data.find(m_shortName)) != data.end()) { return it; }
+        if ((it = data.find(m_longName)) != data.end()) { return it; }
+        return data.end();
     }
 
 private:

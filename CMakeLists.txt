@@ -28,6 +28,7 @@ set(HEADER_FILES
     include/csv_reader.h
     include/cartesians.h
     include/general/SharedMemory/threaded_multi_writer_handler.h
+    include/lidar_data.h
 )
 
 

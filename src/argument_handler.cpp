@@ -28,3 +28,8 @@ void ArgumentHandler::CsvHandler(std::string input) {
     std::cout << "Got parameter -c/--csvpath setting path of csv file to "
               << ArgumentHandler::m_csvPath << std::endl;
 }
+void ArgumentHandler::LidarHandler(std::string input) {
+    ArgumentHandler::m_lidarPath = input;
+    std::cout << "Got parameter -l/--lidar setting path of csv file to "
+              << ArgumentHandler::m_lidarPath << std::endl;
+}

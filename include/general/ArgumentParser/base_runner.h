@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "nlohmann/json.hpp"
 
 namespace Arg {
 
@@ -22,6 +23,10 @@ public:
     virtual void add(std::vector<std::string>::iterator it) {};
     virtual bool testArgument(std::vector<std::string>::iterator it) {
         return false;
+    };
+
+    virtual nlohmann::json::iterator testJsonArgument(nlohmann::json& data) {
+        return data.end();
     };
 
 private:

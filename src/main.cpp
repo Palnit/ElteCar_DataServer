@@ -4,9 +4,11 @@
 #include <fstream>
 #include <ios>
 #include <iostream>
+#include <istream>
 #include <nlohmann/json.hpp>
 #include <ostream>
 #include <regex>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
@@ -20,6 +22,36 @@
 #include "general/ArgumentParser/runner.h"
 #include "general/SharedMemory/bufferd_writer.h"
 #include "general/SharedMemory/threaded_multi_writer_handler.h"
+#include "lidar_data.h"
+
+std::string numberFile(std::string input, int i) {
+    std::regex regex("\\{.*?\\}");
+    return std::regex_replace(input, regex, std::to_string(i));
+}
+
+std::vector<LidarData> readLidar(std::string fileName) {
+    std::vector<LidarData> output;
+    std::ifstream stream;
+    stream.open(fileName);
+    std::string line;
+    while (std::getline(stream, line)) {
+        std::stringstream stringstream(line);
+        std::string data_line;
+        std::vector<std::string> data;
+        while (std::getline(stringstream, data_line, ' ')) {
+            data.push_back(data_line);
+        }
+        if (data.size() < 4) { return std::vector<LidarData>(); }
+        LidarData lidar;
+        lidar.x = std::stod(data[0]);
+        lidar.y = std::stod(data[1]);
+        lidar.z = std::stod(data[2]);
+        lidar.reflect = std::stoi(data[3]);
+        output.push_back(lidar);
+    }
+    stream.close();
+    return output;
+};
 
 int main(int argc, char** argv) {
     Arg::Parser parser(argc, argv);
@@ -35,7 +67,10 @@ int main(int argc, char** argv) {
         "-i", "--images", &ArgumentHandler::BaseImageHandler));
     parser.addRunner(
         new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
-            "-c", "-csvpath", &ArgumentHandler::CsvHandler));
+            "-c", "--csvpath", &ArgumentHandler::CsvHandler));
+    parser.addRunner(
+        new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
+            "-l", "--lidar", &ArgumentHandler::LidarHandler));
     parser.parse();
 
     CSVReader csvData(ArgumentHandler::m_csvPath, true);
@@ -47,52 +82,41 @@ int main(int argc, char** argv) {
         csvCartesians.push_back(line);
     }
 
-    SharedMemory::BufferedWriter writer("Asd", "Asd_", 2);
-    SharedMemory::BufferedWriter writer2("Asd2", "Asd2_", 2);
-    SharedMemory::BufferedWriter writer3("Asd3", "Asd3_", 2);
-    SharedMemory::BufferedWriter writer4("Asd4", "Asd4_", 2);
-    SharedMemory::ThreadedMultiWriterHandler multi("Test");
-    multi.addWriter(writer);
-    multi.addWriter(writer2);
-    multi.addWriter(writer3);
-    multi.addWriter(writer4);
+    SharedMemory::ThreadedMultiWriterHandler multi("Images");
+    SharedMemory::BufferedWriter writer("Lidar", "Lidar_", 2);
+    std::string writer_name = "Writer";
+    for (int i = 0; i < ArgumentHandler::m_imageNames.size(); ++i) {
 
+        multi.addWriter(SharedMemory::BufferedWriter(
+            writer_name + std::to_string(i),
+            writer_name + "_" + std::to_string(i), 2));
+    }
     for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
         std::chrono::milliseconds dura(ArgumentHandler::m_delay);
         std::this_thread::sleep_for(dura);
-        std::regex regex("\\{.*?\\}");
-        std::string name = std::regex_replace(ArgumentHandler::m_imageNames[0],
-                                              regex, std::to_string(i));
-        std::string name2 = std::regex_replace(ArgumentHandler::m_imageNames[1],
-                                               regex, std::to_string(i));
-        std::string name3 = std::regex_replace(ArgumentHandler::m_imageNames[2],
-                                               regex, std::to_string(i));
-        std::string name4 = std::regex_replace(ArgumentHandler::m_imageNames[3],
-                                               regex, std::to_string(i));
-        std::cout << "reading " << name << std::endl;
-        std::cout << name2 << std::endl;
-        std::cout << name3 << std::endl;
-        std::cout << name4 << std::endl;
-
+        std::vector<void*> data;
+        std::vector<long> size;
+        std::cout << "Reading Images:";
         try {
-            auto [message, sizeoffile] = FileHandling::BinaryReader(name);
-            auto [message2, sizeoffile2] = FileHandling::BinaryReader(name2);
-            auto [message3, sizeoffile3] = FileHandling::BinaryReader(name3);
-            auto [message4, sizeoffile4] = FileHandling::BinaryReader(name4);
-
-            void* data[4] = {message, message2, message3, message4};
-            long size[4] = {sizeoffile, sizeoffile2, sizeoffile3, sizeoffile4};
-
-            multi.writeMultiMemory<4>(data, size);
-
-            delete message;
-            delete message2;
-            delete message3;
-            delete message4;
+            for (auto name : ArgumentHandler::m_imageNames) {
+                auto trueName = numberFile(name, i);
+                std::cout << trueName << std::endl;
+                auto [message, sizeoffile] =
+                    FileHandling::BinaryReader(numberFile(trueName, i));
+                data.push_back(message);
+                size.push_back(sizeoffile);
+            }
+            multi.writeMultiMemory(data, size);
+            for (auto message : data) { delete (char*) message; }
         } catch (std::ifstream::failure e) {
             std::cout << "Error" << std::endl;
             continue;
         }
+        std::string lidarTruePath = numberFile(ArgumentHandler::m_lidarPath, i);
+        std::cout << "Reading Lidar Data:" << lidarTruePath << std::endl;
+        std::vector<LidarData> lidarData = readLidar(lidarTruePath);
+        writer.writeMemory(lidarData.data(),
+                           sizeof(LidarData) * lidarData.size());
     }
     return 0;
 }

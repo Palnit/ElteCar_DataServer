@@ -1,5 +1,4 @@
 #include "general/SharedMemory/bufferd_writer.h"
-#include <fcntl.h>
 #include <cerrno>
 #include <cstring>
 #include <iostream>
@@ -12,6 +11,7 @@
     || defined(__WIN32) && !defined(__CYGWIN__)
 #include <windows.h>
 #else
+#include <fcntl.h>
 #include <semaphore.h>
 #include <sys/mman.h>
 #include <unistd.h>

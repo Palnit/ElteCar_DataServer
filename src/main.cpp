@@ -73,6 +73,18 @@ int main(int argc, char** argv) {
             "-l", "--lidar", &ArgumentHandler::LidarHandler));
     parser.parse();
 
+    SharedMemory::ThreadedMultiWriterHandler multi("Images");
+    SharedMemory::BufferedWriter writer("Lidar", "Lidar_", 2);
+    SharedMemory::BufferedWriter csvwriter("Csv", "Csv_", 2);
+
+    std::string writer_name = "Writer";
+    for (int i = 0; i < ArgumentHandler::m_imageNames.size(); ++i) {
+
+        multi.addWriter(SharedMemory::BufferedWriter(
+            writer_name + std::to_string(i),
+            writer_name + "_" + std::to_string(i), 2));
+    }
+
     CSVReader csvData(ArgumentHandler::m_csvPath, true);
     std::vector<cartesians> csvCartesians;
     cartesians line;
@@ -82,15 +94,6 @@ int main(int argc, char** argv) {
         csvCartesians.push_back(line);
     }
 
-    SharedMemory::ThreadedMultiWriterHandler multi("Images");
-    SharedMemory::BufferedWriter writer("Lidar", "Lidar_", 2);
-    std::string writer_name = "Writer";
-    for (int i = 0; i < ArgumentHandler::m_imageNames.size(); ++i) {
-
-        multi.addWriter(SharedMemory::BufferedWriter(
-            writer_name + std::to_string(i),
-            writer_name + "_" + std::to_string(i), 2));
-    }
     for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
         std::chrono::milliseconds dura(ArgumentHandler::m_delay);
         std::this_thread::sleep_for(dura);
@@ -117,6 +120,7 @@ int main(int argc, char** argv) {
         std::vector<LidarData> lidarData = readLidar(lidarTruePath);
         writer.writeMemory(lidarData.data(),
                            sizeof(LidarData) * lidarData.size());
+        csvwriter.writeMemory(&csvCartesians[i], sizeof(cartesians));
     }
     return 0;
 }

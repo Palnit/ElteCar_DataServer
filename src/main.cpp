@@ -9,6 +9,7 @@
 #include <regex>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 #include "argument_handler.h"
 #include "cartesians.h"
@@ -18,6 +19,7 @@
 #include "general/ArgumentParser/parser.h"
 #include "general/ArgumentParser/runner.h"
 #include "general/SharedMemory/bufferd_writer.h"
+#include "general/SharedMemory/threaded_multi_writer_handler.h"
 
 int main(int argc, char** argv) {
     Arg::Parser parser(argc, argv);
@@ -49,6 +51,11 @@ int main(int argc, char** argv) {
     SharedMemory::BufferedWriter writer2("Asd2", "Asd2_", 2);
     SharedMemory::BufferedWriter writer3("Asd3", "Asd3_", 2);
     SharedMemory::BufferedWriter writer4("Asd4", "Asd4_", 2);
+    SharedMemory::ThreadedMultiWriterHandler multi("Test");
+    multi.addWriter(writer);
+    multi.addWriter(writer2);
+    multi.addWriter(writer3);
+    multi.addWriter(writer4);
 
     for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
         std::chrono::milliseconds dura(ArgumentHandler::m_delay);
@@ -72,10 +79,12 @@ int main(int argc, char** argv) {
             auto [message2, sizeoffile2] = FileHandling::BinaryReader(name2);
             auto [message3, sizeoffile3] = FileHandling::BinaryReader(name3);
             auto [message4, sizeoffile4] = FileHandling::BinaryReader(name4);
-            writer.writeMemory(message, sizeoffile);
-            writer2.writeMemory(message2, sizeoffile2);
-            writer3.writeMemory(message3, sizeoffile3);
-            writer4.writeMemory(message4, sizeoffile4);
+
+            void* data[4] = {message, message2, message3, message4};
+            long size[4] = {sizeoffile, sizeoffile2, sizeoffile3, sizeoffile4};
+
+            multi.writeMultiMemory<4>(data, size);
+
             delete message;
             delete message2;
             delete message3;

@@ -3,7 +3,9 @@
 #include <cerrno>
 #include <cstring>
 #include <iostream>
+#include <iterator>
 #include <string>
+#include <utility>
 #include "general/SharedMemory/info.h"
 
 #if defined(WIN32) || defined(_WIN32) \
@@ -288,7 +290,6 @@ bool BufferedWriter::initalize() {
             return false;
         }
     }
-    m_initalized = true;
     return true;
 }
 

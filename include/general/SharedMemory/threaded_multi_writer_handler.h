@@ -19,8 +19,25 @@ public:
     bool initalize();
 
     template<std::size_t N>
-    void writeMultiMemory(void* data[N]) {
+    bool writeMultiMemory(void* data[N], long size[N]) {
         assert(N == m_writers.size());
+
+        if (!m_initalized) {
+            if ((m_initalized = initalize()) == false) { return false; }
+        }
+
+        std::vector<std::thread> threads;
+
+        for (int i = 0; i < N; i++) {
+            std::thread thread(
+                [](SharedMemory::BufferedWriter& writer, void* data,
+                   std::size_t size) { writer.writeMemory(data, size); },
+                std::ref(m_writers[i]), data[i], size[i]);
+
+            threads.push_back(std::move(thread));
+        }
+        for (auto& thread : threads) { thread.join(); }
+        return true;
     }
 
 private:

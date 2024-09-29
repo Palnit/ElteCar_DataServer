@@ -14,6 +14,7 @@ set(PROJECT_SOURCES
    src/general/SharedMemory/bufferd_writer.cpp
    src/argument_handler.cpp
    src/cpp_file_handling.cpp
+   src/general/SharedMemory/threaded_multi_writer_handler.cpp
 )
 
 set(HEADER_FILES
@@ -26,6 +27,7 @@ set(HEADER_FILES
     include/cpp_file_handling.h
     include/csv_reader.h
     include/cartesians.h
+    include/general/SharedMemory/threaded_multi_writer_handler.h
 )
 
 

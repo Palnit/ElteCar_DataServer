@@ -137,7 +137,7 @@ bool BufferedWriter::writeMemory(const void* memory, std::size_t size) {
     if (!m_initalized) {
         if ((m_initalized = initalize()) == false) { return false; }
     }
-    switch (WaitForSingleObject(m_infoSem, 1000)) {
+    switch (WaitForSingleObject(m_infoSem, 10)) {
         case WAIT_ABANDONED:
             std::cout << "Semaphore wait Abandoned: " << std::endl;
             return false;
@@ -160,7 +160,7 @@ bool BufferedWriter::writeMemory(const void* memory, std::size_t size) {
         throw new std::logic_error("Not Implemented");
     }
 
-    switch (WaitForSingleObject(sem, 1000)) {
+    switch (WaitForSingleObject(sem, 10)) {
         case WAIT_ABANDONED:
             std::cout << "Semaphore wait Abandoned: " << std::endl;
             return false;

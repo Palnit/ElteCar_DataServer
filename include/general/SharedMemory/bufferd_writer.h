@@ -31,6 +31,8 @@ public:
 
     bool writeMemory(const void* memory, std::size_t size);
 
+    std::string InfoBufferName() { return m_infoBufferName; }
+
     bool initalize();
 
 private:

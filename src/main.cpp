@@ -24,11 +24,18 @@
 #include "general/SharedMemory/threaded_multi_writer_handler.h"
 #include "lidar_data.h"
 
+/// fuction to number files gotten from the cmd
+/// @param input the input file name
+/// @param i the number of the file
+/// @return the numbered name of the file
 std::string numberFile(std::string input, int i) {
     std::regex regex("\\{.*?\\}");
     return std::regex_replace(input, regex, std::to_string(i));
 }
 
+/// function to read a lidar file into a vector
+/// @param fileName the name of the lidar file
+/// @return the output vector
 std::vector<LidarData> readLidar(std::string fileName) {
     std::vector<LidarData> output;
     std::ifstream stream;
@@ -86,8 +93,8 @@ int main(int argc, char** argv) {
     }
 
     CSVReader csvData(ArgumentHandler::m_csvPath, true);
-    std::vector<cartesians> csvCartesians;
-    cartesians line;
+    std::vector<Cartesians> csvCartesians;
+    Cartesians line;
     while (csvData.ReadLine(line.ID, line.Lat, line.Lon, line.Alt, line.Vel,
                             line.Ax, line.Ay, line.Az, line.Mx, line.My,
                             line.Mz)) {
@@ -120,7 +127,7 @@ int main(int argc, char** argv) {
         std::vector<LidarData> lidarData = readLidar(lidarTruePath);
         writer.writeMemory(lidarData.data(),
                            sizeof(LidarData) * lidarData.size());
-        csvwriter.writeMemory(&csvCartesians[i], sizeof(cartesians));
+        csvwriter.writeMemory(&csvCartesians[i], sizeof(Cartesians));
     }
     return 0;
 }

@@ -1,6 +1,7 @@
 #ifndef ELTECAR_DATASERVER_INCLUDE_GENERAL_SHAREDMEMORY_THREADED_MULTI_WRITER_HANDLER_H
 #define ELTECAR_DATASERVER_INCLUDE_GENERAL_SHAREDMEMORY_THREADED_MULTI_WRITER_HANDLER_H
 
+
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -9,21 +10,45 @@
 #include <vector>
 #include "general/SharedMemory/bufferd_writer.h"
 #include "general/SharedMemory/info.h"
+
+
+#if defined(WIN32) || defined(_WIN32) \
+|| defined(__WIN32) && !defined(__CYGWIN__)
+#else
+#include <sys/mman.h>
+#endif
 namespace SharedMemory {
 
 #if defined(WIN32) || defined(_WIN32) \
     || defined(__WIN32) && !defined(__CYGWIN__)
+
+/// \class ThreadedMultiWriterHandler
+/// \brief This class splits multiple buffered writers into separate threads
+/// and syncs them tougether
 class ThreadedMultiWriterHandler {
 public:
+
+    /// Constructor
+    /// @param bufferName Name of the threaded writers info buffer
     ThreadedMultiWriterHandler(std::string bufferName)
         : m_infoBufferName(bufferName) {}
 
+    /// Deconstructor to close shared memory
     ~ThreadedMultiWriterHandler();
 
+    /// Add a buffered writer to use in a threaded way
+    /// @param writers the writter to be added copies it
     void addWriter(SharedMemory::BufferedWriter writers);
 
+    /// initializes the threader writers shared memory and semaphore
     bool initalize();
 
+    /// Writes to memory an array of data
+    /// @tparam N The number of data in the array
+    /// @param data The data array to write into the order must be the same that the
+    /// writers were added to the threaded writer
+    /// @param size the size of each data
+    /// @return whatever the operation succeded or not
     template<std::size_t N>
     bool writeMultiMemory(void* data[N], long size[N]) {
         assert(N == m_writers.size());
@@ -64,6 +89,11 @@ public:
         return true;
     }
 
+    /// Writes to memory an vecotr of data
+    /// @param data The data vector to write into the order must be the same that the
+    /// writers were added to the threaded writer
+    /// @param size the size of each data
+    /// @return whatever the operation succeded or not
     bool writeMultiMemory(std::vector<void*> data, std::vector<long> size) {
         assert(data.size() == m_writers.size());
         assert(size.size() == m_writers.size());
@@ -113,15 +143,32 @@ private:
     bool m_initalized = false;
 };
 #else
+
+/// \class ThreadedMultiWriterHandler
+/// \brief This class splits multiple buffered writers into separate threads
+/// and syncs them tougether
 class ThreadedMultiWriterHandler {
 public:
+    /// Constructor
+    /// @param bufferName Name of the threaded writers info buffer
     ThreadedMultiWriterHandler(std::string bufferName)
         : m_infoBufferName(bufferName) {}
 
+    ~ThreadedMultiWriterHandler(){ shm_unlink(m_infoBufferName.c_str());}
+
+    /// Add a buffered writer to use in a threaded way
+    /// @param writers the writter to be added copies it
     void addWriter(SharedMemory::BufferedWriter writers);
 
+    /// initializes the threader writers shared memory and semaphore
     bool initalize();
 
+    /// Writes to memory an array of data
+    /// @tparam N The number of data in the array
+    /// @param data The data array to write into the order must be the same that the
+    /// writers were added to the threaded writer
+    /// @param size the size of each data
+    /// @return whatever the operation succeded or not
     template<std::size_t N>
     bool writeMultiMemory(void* data[N], long size[N]) {
         assert(N == m_writers.size());
@@ -155,6 +202,11 @@ public:
         return true;
     }
 
+    /// Writes to memory an vecotr of data
+    /// @param data The data vector to write into the order must be the same that the
+    /// writers were added to the threaded writer
+    /// @param size the size of each data
+    /// @return whatever the operation succeded or not
     bool writeMultiMemory(std::vector<void*> data, std::vector<long> size) {
         assert(data.size() == m_writers.size());
         assert(size.size() == m_writers.size());

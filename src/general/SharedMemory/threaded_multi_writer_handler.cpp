@@ -113,7 +113,7 @@ bool ThreadedMultiWriterHandler::initalize() {
     m_memoryInfo->numberOfWriters = m_writers.size();
     m_memoryInfo->infoSize = size;
 
-    if (sem_init(&(m_memoryInfo->semaphore), 1, 1) == -1) {
+    if (sem_init(&m_memoryInfo->semaphore, 1, 1) == -1) {
         std::cout << "Initalization of Semaphore for shared memory of name: "
                   << m_infoBufferName << " failed errror: " << strerror(errno)
                   << std::endl;

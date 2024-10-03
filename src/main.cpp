@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -106,6 +107,7 @@ int main(int argc, char** argv) {
         std::this_thread::sleep_for(dura);
         std::vector<void*> data;
         std::vector<long> size;
+        std::vector<LidarData> lidarData;
         std::cout << "Reading Images:";
         try {
             for (auto name : ArgumentHandler::m_imageNames) {
@@ -116,18 +118,29 @@ int main(int argc, char** argv) {
                 data.push_back(message);
                 size.push_back(sizeoffile);
             }
-            multi.writeMultiMemory(data, size);
-            for (auto message : data) { delete (char*) message; }
         } catch (std::ifstream::failure e) {
-            std::cout << "Error" << std::endl;
+            std::cout << "Error: no picture number: " << i << std::endl;
             continue;
         }
         std::string lidarTruePath = numberFile(ArgumentHandler::m_lidarPath, i);
+        auto it = std::find_if(csvCartesians.begin(), csvCartesians.end(),
+                               [&i](const Cartesians& x) { return x.ID == i; });
+        if (it == csvCartesians.end()) {
+            std::cout << "Error: no csv data number: " << i << std::endl;
+            continue;
+        }
         std::cout << "Reading Lidar Data:" << lidarTruePath << std::endl;
-        std::vector<LidarData> lidarData = readLidar(lidarTruePath);
+        try {
+            lidarData = readLidar(lidarTruePath);
+        } catch (std::ifstream::failure e) {
+            std::cout << "Error: no picture number: " << i << std::endl;
+            continue;
+        }
+        multi.writeMultiMemory(data, size);
+        for (auto message : data) { delete (char*) message; }
         writer.writeMemory(lidarData.data(),
                            sizeof(LidarData) * lidarData.size());
-        csvwriter.writeMemory(&csvCartesians[i], sizeof(Cartesians));
+        csvwriter.writeMemory(&*it, sizeof(Cartesians));
     }
     return 0;
 }

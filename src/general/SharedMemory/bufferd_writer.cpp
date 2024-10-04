@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iterator>
 #include <string>
+#include <tuple>
 #include <utility>
 #include "general/SharedMemory/info.h"
 
@@ -33,7 +34,7 @@ BufferedWriter::BufferedWriter(const std::string& infoBufferName,
         std::string sem_name = name + "_sem";
         m_infoSize +=
             sizeof(char) * (name.length() + 1) + (sem_name.length() + 1);
-        m_memoryBuffer.push_back({name, sem_name, nullptr, nullptr, nullptr});
+        m_memoryBuffer.push_back(std::make_tuple(name, -1, nullptr, nullptr));
     }
 }
 
@@ -51,7 +52,7 @@ BufferedWriter::BufferedWriter(const std::string& infoBufferName,
         std::string sem_name = name + "_sem";
         m_infoSize +=
             sizeof(char) * (name.length() + 1) + (sem_name.length() + 1);
-        m_memoryBuffer.push_back({name, sem_name, nullptr, nullptr, nullptr});
+        m_memoryBuffer.push_back(std::make_tuple(name, -1, nullptr, nullptr));
     }
 }
 
@@ -198,7 +199,7 @@ BufferedWriter::BufferedWriter(const std::string& infoBufferName,
     for (int i = 1; i <= bufferCount; i++) {
         std::string name = defaultBufferName + std::to_string(i);
         m_infoSize += sizeof(char) * (name.length() + 1) + sizeof(sem_t);
-        m_memoryBuffer.push_back({name, -1, nullptr, nullptr});
+        m_memoryBuffer.push_back(std::make_tuple(name, -1, nullptr, nullptr));
     }
 }
 
@@ -214,7 +215,7 @@ BufferedWriter::BufferedWriter(const std::string& infoBufferName,
     for (int i = 1; i <= bufferCount; i++) {
         std::string name = defaultBufferName + std::to_string(i);
         m_infoSize += sizeof(char) * (name.length() + 1) + sizeof(sem_t);
-        m_memoryBuffer.push_back({name, -1, nullptr, nullptr});
+        m_memoryBuffer.push_back(std::make_tuple(name, -1, nullptr, nullptr));
     }
 }
 

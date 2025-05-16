@@ -1,13 +1,12 @@
 #include <algorithm>
 #include <chrono>
-#include <cstdio>
-#include <cstring>
 #include <fstream>
 #include <ios>
 #include <iostream>
 #include <istream>
 #include <nlohmann/json.hpp>
 #include <ostream>
+#include <random>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -30,16 +29,28 @@
 /// @param i the number of the file
 /// @return the numbered name of the file
 std::string numberFile(std::string input, int i) {
+    std::regex numbered_regex(R"(\{N(\d*?)\})");
+    std::smatch number_match;
+    if (std::regex_search(input, number_match, numbered_regex)) {
+        std::stringstream numbering;
+        int width = std::atoi(number_match[1].str().c_str());
+        numbering << std::setfill('0') << std::setw(width) << i;
+        std::string number = numbering.str();
+        return std::regex_replace(input, numbered_regex, number);
+    }
     std::regex regex("\\{.*?\\}");
     return std::regex_replace(input, regex, std::to_string(i));
 }
 
 /// function to read a lidar file into a vector
 /// @param fileName the name of the lidar file
+/// @param openmode the file open mode
 /// @return the output vector
 std::vector<LidarData> readLidar(std::string fileName) {
+    std::cout << "fileName: " << fileName << std::endl;
     std::vector<LidarData> output;
     std::ifstream stream;
+    stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
     stream.open(fileName);
     std::string line;
     while (std::getline(stream, line)) {
@@ -61,6 +72,29 @@ std::vector<LidarData> readLidar(std::string fileName) {
     return output;
 };
 
+std::vector<LidarData> readLidarBinary(std::string fileName) {
+    std::vector<LidarData> output;
+    std::ifstream stream;
+    stream.exceptions(std::ifstream::badbit);
+    stream.open(fileName, std::ios::binary | std::ios::in);
+    stream.seekg(0, std::ios::end);
+    const size_t num_elements = stream.tellg() / sizeof(float);
+    stream.seekg(0, std::ios::beg);
+    std::vector<float> data(num_elements);
+    stream.read(reinterpret_cast<char*>(&data[0]),
+                num_elements * sizeof(float));
+    for (size_t i = 0; i < data.size(); i += 4) {
+        LidarData lidar;
+        lidar.x = data[i];
+        lidar.y = data[i + 1];
+        lidar.z = data[i + 2];
+        lidar.reflect = 0;
+        output.push_back(lidar);
+    }
+    stream.close();
+    return output;
+}
+
 int main(int argc, char** argv) {
     Arg::Parser parser(argc, argv);
     parser.addRunner(
@@ -79,10 +113,13 @@ int main(int argc, char** argv) {
     parser.addRunner(
         new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
             "-l", "--lidar", &ArgumentHandler::LidarHandler));
+    parser.addRunner(
+        new Arg::Runner<std::string, Arg::RunnerType::NORMAL_ARGUMENT>(
+            "-oxt", "--oxt", &ArgumentHandler::OxtHandler));
     parser.parse();
 
     SharedMemory::ThreadedMultiWriterHandler multi("Images");
-    SharedMemory::BufferedWriter writer("Lidar", "Lidar_", 2);
+    SharedMemory::BufferedWriter writer("Lidar", 5000000, "Lidar_", 2);
     SharedMemory::BufferedWriter csvwriter("Csv", "Csv_", 2);
 
     std::string writer_name = "Writer";
@@ -93,13 +130,16 @@ int main(int argc, char** argv) {
             writer_name + "_" + std::to_string(i), 2));
     }
 
-    CSVReader csvData(ArgumentHandler::m_csvPath, true);
     std::vector<Cartesians> csvCartesians;
-    Cartesians line;
-    while (csvData.ReadLine(line.ID, line.Lat, line.Lon, line.Alt, line.Vel,
-                            line.Ax, line.Ay, line.Az, line.Mx, line.My,
-                            line.Mz)) {
-        csvCartesians.push_back(line);
+    if (!ArgumentHandler::m_csvPath.empty()) {
+
+        CSVReader csvData(ArgumentHandler::m_csvPath, true);
+        Cartesians line{};
+        while (csvData.ReadLine(line.ID, line.Lat, line.Lon, line.Alt, line.Vel,
+                                line.Ax, line.Ay, line.Az, line.Mx, line.My,
+                                line.Mz)) {
+            csvCartesians.push_back(line);
+        }
     }
 
     for (int i = 1; i < ArgumentHandler::m_numberOfDataPoints; i++) {
@@ -108,9 +148,9 @@ int main(int argc, char** argv) {
         std::vector<void*> data;
         std::vector<long> size;
         std::vector<LidarData> lidarData;
-        std::cout << "Reading Images:";
+        std::cout << "Reading Images:" << std::endl;
         try {
-            for (auto name : ArgumentHandler::m_imageNames) {
+            for (const auto& name : ArgumentHandler::m_imageNames) {
                 auto trueName = numberFile(name, i);
                 std::cout << trueName << std::endl;
                 auto [message, sizeoffile] =
@@ -118,29 +158,56 @@ int main(int argc, char** argv) {
                 data.push_back(message);
                 size.push_back(sizeoffile);
             }
-        } catch (std::ifstream::failure e) {
-            std::cout << "Error: no picture number: " << i << std::endl;
+        } catch (std::ifstream::failure& e) {
+            std::cout << "Error: no picture number: " << i
+                      << "exception: " << e.what() << std::endl;
             continue;
         }
         std::string lidarTruePath = numberFile(ArgumentHandler::m_lidarPath, i);
+        Cartesians cart{};
         auto it = std::find_if(csvCartesians.begin(), csvCartesians.end(),
                                [&i](const Cartesians& x) { return x.ID == i; });
         if (it == csvCartesians.end()) {
-            std::cout << "Error: no csv data number: " << i << std::endl;
-            continue;
+            if (!ArgumentHandler::m_oxt_file_name.empty()) {
+                try {
+                    std::string oxtPath =
+                        numberFile(ArgumentHandler::m_oxt_file_name, i);
+                    cart = FileHandling::readCartesiansFromOxt(oxtPath);
+                } catch (std::ifstream::failure& e) {
+                    std::cout << "Error: no imu data number: " << i
+                              << std::endl;
+                    continue;
+                }
+            } else {
+                std::cout << "Error: no imu data number: " << i << std::endl;
+            }
+        } else {
+            cart = *it;
         }
+        std::default_random_engine gen;
+        std::normal_distribution<double> dist(0.0, 0.0005);
+        cart.Lat += dist(gen);
+        cart.Lon += dist(gen);
+        cart.Yaw += dist(gen);
+        cart.Pitch += dist(gen);
         std::cout << "Reading Lidar Data:" << lidarTruePath << std::endl;
         try {
-            lidarData = readLidar(lidarTruePath);
-        } catch (std::ifstream::failure e) {
-            std::cout << "Error: no picture number: " << i << std::endl;
+            if (lidarTruePath.ends_with(".bin")) {
+                lidarData = readLidarBinary(lidarTruePath);
+            } else {
+                lidarData = readLidar(lidarTruePath);
+            }
+        } catch (std::ifstream::failure& e) {
+            std::cout << "Error: no lidar: " << i << " exception: " << e.what()
+                      << std::endl;
+
             continue;
         }
         multi.writeMultiMemory(data, size);
         for (auto message : data) { delete (char*) message; }
         writer.writeMemory(lidarData.data(),
                            sizeof(LidarData) * lidarData.size());
-        csvwriter.writeMemory(&*it, sizeof(Cartesians));
+        csvwriter.writeMemory(&cart, sizeof(Cartesians));
     }
     return 0;
 }

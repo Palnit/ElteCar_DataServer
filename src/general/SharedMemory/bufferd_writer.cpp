@@ -3,9 +3,11 @@
 #include <cstring>
 #include <iostream>
 #include <iterator>
+#include <nlohmann/detail/exceptions.hpp>
 #include <string>
 #include <tuple>
 #include <utility>
+
 #include "general/SharedMemory/info.h"
 
 #if defined(WIN32) || defined(_WIN32) \
@@ -322,14 +324,17 @@ bool BufferedWriter::writeMemory(const void* memory, std::size_t size) {
                       << " failed error: " << strerror(errno) << std::endl;
             return false;
         }
+        munmap(pointer, m_size);
         m_size = size * 2;
+        pointer =
+            mmap(NULL, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, descript, 0);
     }
 
     if (sem_wait(sem) == -1) {
         std::cout << "Semaphore wait error: " << strerror(errno);
         return false;
     }
-    std::memcpy(pointer, memory, size);
+    memcpy(pointer, memory, size);
     if (m_memoryInfo->bufferSize != m_size) {
         m_memoryInfo->bufferSize = m_size;
     }

@@ -50,7 +50,7 @@ std::vector<LidarData> readLidar(std::string fileName) {
     std::cout << "fileName: " << fileName << std::endl;
     std::vector<LidarData> output;
     std::ifstream stream;
-    stream.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    stream.exceptions(std::ifstream::badbit);
     stream.open(fileName);
     std::string line;
     while (std::getline(stream, line)) {
@@ -165,8 +165,8 @@ int main(int argc, char** argv) {
         }
         std::string lidarTruePath = numberFile(ArgumentHandler::m_lidarPath, i);
         Cartesians cart{};
-        auto it = std::find_if(csvCartesians.begin(), csvCartesians.end(),
-                               [&i](const Cartesians& x) { return x.ID == i; });
+        auto it = std::ranges::find_if(
+            csvCartesians, [&i](const Cartesians& x) { return x.ID == i; });
         if (it == csvCartesians.end()) {
             if (!ArgumentHandler::m_oxt_file_name.empty()) {
                 try {
@@ -175,7 +175,8 @@ int main(int argc, char** argv) {
                     cart = FileHandling::readCartesiansFromOxt(oxtPath);
                 } catch (std::ifstream::failure& e) {
                     std::cout << "Error: no imu data number: " << i
-                              << std::endl;
+                              << std::endl// break;
+                        ;
                     continue;
                 }
             } else {
@@ -184,12 +185,6 @@ int main(int argc, char** argv) {
         } else {
             cart = *it;
         }
-        std::default_random_engine gen;
-        std::normal_distribution<double> dist(0.0, 0.0005);
-        cart.Lat += dist(gen);
-        cart.Lon += dist(gen);
-        cart.Yaw += dist(gen);
-        cart.Pitch += dist(gen);
         std::cout << "Reading Lidar Data:" << lidarTruePath << std::endl;
         try {
             if (lidarTruePath.ends_with(".bin")) {
@@ -204,7 +199,7 @@ int main(int argc, char** argv) {
             continue;
         }
         multi.writeMultiMemory(data, size);
-        for (auto message : data) { delete (char*) message; }
+        for (auto message : data) { delete static_cast<char*>(message); }
         writer.writeMemory(lidarData.data(),
                            sizeof(LidarData) * lidarData.size());
         csvwriter.writeMemory(&cart, sizeof(Cartesians));
